@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Scam Shield: checks WhatsApp forwards, SMS and live calls for digital-arrest, fake-KYC and UPI-refund scams, in English, Hindi and Tamil.">
+<meta name="theme-color" content="#0E1A17">
+<title>Scam Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-width column. A rubber-stamp style verdict sits under the input,
+   red flags quote the exact lines that gave the scam away, and the 1930 helpline is always one tap away. */
+:root{
+  --bg:#F3F1EA; --card:#FFFFFF; --ink:#13201C; --muted:#5B6661; --line:#DAD7CC;
+  --brand:#0F5C4B; --brand-ink:#FFFFFF;
+  --scam:#C8261B; --scam-soft:rgba(200,38,27,.10);
+  --warn:#B86A00; --warn-soft:rgba(184,106,0,.12);
+  --safe:#1E7A4F; --safe-soft:rgba(30,122,79,.11);
+  --mark:rgba(200,38,27,.18);
+  --font:"Hind","Noto Sans Tamil",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1A17; --card:#15231F; --ink:#E8EEEA; --muted:#97A59F; --line:#26372F;
+  --brand:#4FC3A1; --brand-ink:#0E1A17;
+  --scam:#FF6B5E; --scam-soft:rgba(255,107,94,.14);
+  --warn:#F2A93B; --warn-soft:rgba(242,169,59,.14);
+  --safe:#4CCB8C; --safe-soft:rgba(76,203,140,.13);
+  --mark:rgba(255,107,94,.28); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1A17; --card:#15231F; --ink:#E8EEEA; --muted:#97A59F; --line:#26372F;
+  --brand:#4FC3A1; --brand-ink:#0E1A17;
+  --scam:#FF6B5E; --scam-soft:rgba(255,107,94,.14);
+  --warn:#F2A93B; --warn-soft:rgba(242,169,59,.14);
+  --safe:#4CCB8C; --safe-soft:rgba(76,203,140,.13);
+  --mark:rgba(255,107,94,.28); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
+[hidden]{display:none!important}
+button,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:620px;margin:0 auto;display:grid;gap:16px}
+h1,h2,h3{margin:0;line-height:1.15;text-wrap:balance}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 0 4px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.brand small{display:block;font-size:13px;color:var(--muted);font-weight:400;letter-spacing:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--card)}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:999px;font-weight:600;cursor:pointer;color:var(--muted);font-size:15px}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tab{min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.tab[aria-selected="true"]{border-color:var(--ink);box-shadow:inset 0 -3px 0 var(--ink)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.label{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+textarea{width:100%;min-height:150px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:12px;line-height:1.45}
+textarea:focus{border-color:var(--brand);outline:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:46px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.samples{display:flex;gap:6px;flex-wrap:wrap}
+.samples button{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:14px;cursor:pointer;color:var(--muted)}
+.samples button:hover{border-color:var(--ink);color:var(--ink)}
+
+/* verdict */
+.verdict{border-radius:14px;border:2px solid var(--line);padding:16px;display:grid;gap:12px;background:var(--card)}
+.verdict[data-v="scam"]{border-color:var(--scam);background:linear-gradient(var(--scam-soft),var(--scam-soft)),var(--card)}
+.verdict[data-v="warn"]{border-color:var(--warn);background:linear-gradient(var(--warn-soft),var(--warn-soft)),var(--card)}
+.verdict[data-v="safe"]{border-color:var(--safe);background:linear-gradient(var(--safe-soft),var(--safe-soft)),var(--card)}
+.stamp{display:inline-block;align-self:start;justify-self:start;font-family:var(--mono);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:14px;padding:4px 10px;border:2px solid currentColor;border-radius:6px;transform:rotate(-2deg)}
+.verdict[data-v="scam"] .stamp{color:var(--scam)}
+.verdict[data-v="warn"] .stamp{color:var(--warn)}
+.verdict[data-v="safe"] .stamp{color:var(--safe)}
+.verdict h2{font-size:26px;font-weight:700}
+.truth{font-size:18px;font-weight:600;margin:0}
+.meter{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.track{height:10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.track i{display:block;height:100%;border-radius:999px;transition:width .35s}
+.verdict[data-v="scam"] .track i{background:var(--scam)}
+.verdict[data-v="warn"] .track i{background:var(--warn)}
+.verdict[data-v="safe"] .track i{background:var(--safe)}
+.meter b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px}
+.flags{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.flags li{display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line)}
+.flags li b{font-size:16px}
+.flags q{color:var(--muted);font-size:14.5px;overflow-wrap:anywhere}
+.todo{margin:0;padding-left:22px;display:grid;gap:4px}
+.todo li::marker{font-weight:700;color:var(--ink)}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.echo{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:15.5px;max-height:220px;overflow:auto;border:1px solid var(--line)}
+
+/* report */
+.report{display:grid;gap:10px}
+.help{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-radius:12px;background:var(--ink);color:var(--bg);padding:14px 16px}
+.help .num{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:.06em;line-height:1}
+.help a,.help button{color:var(--bg);border-color:var(--bg)}
+.help .btn{background:transparent}
+.links{display:grid;gap:6px}
+.links a{color:var(--brand);font-weight:600;text-underline-offset:3px}
+
+/* listen */
+.mic{width:100%;min-height:96px;border-radius:16px;border:2px solid var(--brand);background:var(--card);color:var(--brand);font-weight:700;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px}
+.mic[aria-pressed="true"]{background:var(--scam);border-color:var(--scam);color:#fff}
+.dot{width:12px;height:12px;border-radius:50%;background:currentColor}
+.mic[aria-pressed="true"] .dot{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+select{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 10px}
+.note{font-size:14px;color:var(--muted);margin:0}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:9;max-width:calc(100% - 32px)}
+footer{color:var(--muted);font-size:13.5px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="34" height="38" viewBox="0 0 34 38" aria-hidden="true"><path d="M17 2 3 7v10c0 9 6 15.5 14 19 8-3.5 14-10 14-19V7L17 2Z" fill="var(--brand)"/><path d="m11 19 4.5 4.5L24 14" fill="none" stroke="var(--brand-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1>Scam Shield<small data-t="tagline"></small></h1>
+    </div>
+    <div class="seg" role="group" aria-label="Language">
+      <button data-lang="en" aria-pressed="true">EN</button>
+      <button data-lang="hi" aria-pressed="false" lang="hi">हिं</button>
+      <button data-lang="ta" aria-pressed="false" lang="ta">தமிழ்</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabMsg" aria-selected="true" aria-controls="paneMsg" data-t="tabMsg"></button>
+    <button class="tab" role="tab" id="tabCall" aria-selected="false" aria-controls="paneCall" data-t="tabCall"></button>
+  </div>
+
+  <!-- Message check -->
+  <section id="paneMsg" role="tabpanel" aria-labelledby="tabMsg" class="card" style="display:grid;gap:12px">
+    <label class="label" for="msg" data-t="pasteLabel"></label>
+    <textarea id="msg" spellcheck="false"></textarea>
+    <div class="row">
+      <button class="btn primary" id="checkBtn" data-t="check"></button>
+      <button class="btn" id="pasteBtn" data-t="paste"></button>
+      <button class="btn" id="clearBtn" data-t="clear"></button>
+    </div>
+    <div>
+      <div class="label" data-t="tryExample" style="margin-bottom:6px"></div>
+      <div class="samples" id="samples"></div>
+    </div>
+  </section>
+
+  <!-- Live call -->
+  <section id="paneCall" role="tabpanel" aria-labelledby="tabCall" class="card" style="display:grid;gap:12px" hidden>
+    <p class="note" data-t="callHow"></p>
+    <div class="row">
+      <label class="label" for="recLang" data-t="callLang"></label>
+      <select id="recLang">
+        <option value="hi-IN">हिन्दी / Hinglish</option>
+        <option value="ta-IN">தமிழ்</option>
+        <option value="en-IN">English (India)</option>
+      </select>
+    </div>
+    <button class="mic" id="micBtn" aria-pressed="false"><span class="dot"></span><span id="micTxt"></span></button>
+    <div>
+      <div class="label" data-t="heard" style="margin-bottom:6px"></div>
+      <div class="echo" id="live" aria-live="off"></div>
+    </div>
+    <p class="note" data-t="callPrivacy"></p>
+  </section>
+
+  <!-- Verdict -->
+  <section id="result" aria-live="polite"></section>
+
+  <!-- Report -->
+  <section class="card report" aria-labelledby="repH">
+    <h3 id="repH" data-t="reportH"></h3>
+    <div class="help">
+      <div><div class="label" style="color:inherit;opacity:.8" data-t="helpline"></div><div class="num">1930</div></div>
+      <button class="btn" id="copy1930" data-t="copy"></button>
+    </div>
+    <div class="links">
+      <a href="https://cybercrime.gov.in" target="_blank" rel="noopener" data-t="linkPortal"></a>
+      <a href="https://sancharsaathi.gov.in/sfc/" target="_blank" rel="noopener" data-t="linkChakshu"></a>
+    </div>
+  </section>
+
+  <footer data-t="footer"></footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* =====================================================================
+   1. UI TEXT
+   ===================================================================== */
+const UI = {
+  en:{ tagline:"Check before you pay, share or panic", tabMsg:"Check a message", tabCall:"Listen to a call",
+    pasteLabel:"Paste the WhatsApp forward, SMS or email", placeholder:"Paste a suspicious message here, or tap an example below…",
+    check:"Check", paste:"Paste", clear:"Clear", tryExample:"Try an example",
+    callHow:"Put the call on speaker, then tap Start listening. Scam Shield warns you out loud the moment the caller sounds like a scammer.",
+    callLang:"Call language", heard:"What Scam Shield heard", startListen:"Start listening", stopListen:"Stop listening",
+    callPrivacy:"Message checks run fully on your phone. Live listening uses your browser's speech-to-text, which may send audio to Google to transcribe it. Nothing is stored.",
+    noSpeech:"Live listening needs Chrome on Android or desktop. Use Check a message instead.",
+    micDenied:"Microphone permission was denied. Allow it in your browser settings and try again.",
+    reportH:"Already shared money or details?", helpline:"National Cyber Crime Helpline", copy:"Copy number", copied:"Copied 1930",
+    linkPortal:"Report online at cybercrime.gov.in →", linkChakshu:"Report the fraud call or message on Chakshu (Sanchar Saathi) →",
+    footer:"Scam Shield gives warnings, not legal advice. When in doubt, hang up and call your bank on the number printed on your card.",
+    vScam:"Scam likely", vWarn:"Be careful", vSafe:"No scam signs found", vEmpty:"Waiting for a message",
+    hEmpty:"Paste a message or start listening. Scam Shield explains every red flag it finds.",
+    safeTruth:"Nothing here matches common scam patterns. Still never share an OTP, UPI PIN or card details.",
+    risk:"Risk", flagsH:"Red flags", doH:"What to do now", emptyNeed:"Paste or type a message first.",
+    pasteFail:"Couldn't read the clipboard. Long-press in the box and choose Paste." },
+  hi:{ tagline:"पैसे भेजने या घबराने से पहले जाँचें", tabMsg:"मैसेज जाँचें", tabCall:"कॉल सुनें",
+    pasteLabel:"WhatsApp फॉरवर्ड, SMS या ईमेल यहाँ पेस्ट करें", placeholder:"संदिग्ध मैसेज यहाँ पेस्ट करें, या नीचे कोई उदाहरण चुनें…",
+    check:"जाँचें", paste:"पेस्ट", clear:"साफ़ करें", tryExample:"उदाहरण आज़माएँ",
+    callHow:"कॉल को स्पीकर पर रखें और ‘सुनना शुरू करें’ दबाएँ। कॉल करने वाला ठग जैसा लगते ही Scam Shield बोलकर चेतावनी देगा।",
+    callLang:"कॉल की भाषा", heard:"Scam Shield ने क्या सुना", startListen:"सुनना शुरू करें", stopListen:"सुनना बंद करें",
+    callPrivacy:"मैसेज की जाँच पूरी तरह आपके फ़ोन पर होती है। कॉल सुनने के लिए ब्राउज़र का speech-to-text इस्तेमाल होता है, जो आवाज़ Google को भेज सकता है। कुछ भी सेव नहीं होता।",
+    noSpeech:"कॉल सुनने के लिए Android या कंप्यूटर पर Chrome चाहिए। तब तक ‘मैसेज जाँचें’ इस्तेमाल करें।",
+    micDenied:"माइक्रोफ़ोन की अनुमति नहीं मिली। ब्राउज़र सेटिंग में अनुमति दें और फिर कोशिश करें।",
+    reportH:"पैसे या जानकारी दे चुके हैं?", helpline:"राष्ट्रीय साइबर अपराध हेल्पलाइन", copy:"नंबर कॉपी करें", copied:"1930 कॉपी हो गया",
+    linkPortal:"cybercrime.gov.in पर ऑनलाइन शिकायत करें →", linkChakshu:"धोखाधड़ी वाली कॉल या मैसेज की शिकायत Chakshu (संचार साथी) पर करें →",
+    footer:"Scam Shield सिर्फ़ चेतावनी देता है, कानूनी सलाह नहीं। शक हो तो फ़ोन काटें और कार्ड पर छपे नंबर से अपने बैंक को कॉल करें।",
+    vScam:"ठगी की आशंका", vWarn:"सावधान रहें", vSafe:"ठगी के संकेत नहीं मिले", vEmpty:"मैसेज का इंतज़ार",
+    hEmpty:"मैसेज पेस्ट करें या कॉल सुनना शुरू करें। Scam Shield हर ख़तरे का कारण बताएगा।",
+    safeTruth:"इसमें आम ठगी वाले पैटर्न नहीं मिले। फिर भी OTP, UPI PIN या कार्ड की जानकारी कभी न दें।",
+    risk:"ख़तरा", flagsH:"ख़तरे के संकेत", doH:"अभी क्या करें", emptyNeed:"पहले कोई मैसेज पेस्ट करें या लिखें।",
+    pasteFail:"क्लिपबोर्ड नहीं पढ़ पाए। बॉक्स में देर तक दबाएँ और Paste चुनें।" },
+  ta:{ tagline:"பணம் அனுப்பும் முன் சரிபாருங்கள்", tabMsg:"செய்தியைச் சரிபார்", tabCall:"அழைப்பைக் கேள்",
+    pasteLabel:"WhatsApp ஃபார்வர்ட், SMS அல்லது மின்னஞ்சலை இங்கே ஒட்டவும்", placeholder:"சந்தேகமான செய்தியை இங்கே ஒட்டவும், அல்லது கீழே ஒரு உதாரணத்தைத் தொடவும்…",
+    check:"சரிபார்", paste:"ஒட்டு", clear:"அழி", tryExample:"உதாரணம்",
+    callHow:"அழைப்பை ஸ்பீக்கரில் வைத்து ‘கேட்கத் தொடங்கு’ அழுத்தவும். அழைப்பவர் மோசடிக்காரர் போல் பேசியவுடன் Scam Shield சத்தமாக எச்சரிக்கும்.",
+    callLang:"அழைப்பின் மொழி", heard:"Scam Shield கேட்டது", startListen:"கேட்கத் தொடங்கு", stopListen:"கேட்பதை நிறுத்து",
+    callPrivacy:"செய்தி சரிபார்ப்பு முழுவதும் உங்கள் போனிலேயே நடக்கும். அழைப்பைக் கேட்க உலாவியின் speech-to-text பயன்படுகிறது; அது ஒலியை Google-க்கு அனுப்பலாம். எதுவும் சேமிக்கப்படாது.",
+    noSpeech:"அழைப்பைக் கேட்க Android அல்லது கணினியில் Chrome தேவை. அதுவரை ‘செய்தியைச் சரிபார்’ பயன்படுத்தவும்.",
+    micDenied:"மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது. உலாவி அமைப்பில் அனுமதி தந்து மீண்டும் முயலவும்.",
+    reportH:"ஏற்கனவே பணம் அல்லது விவரங்களைக் கொடுத்துவிட்டீர்களா?", helpline:"தேசிய சைபர் குற்ற உதவி எண்", copy:"எண்ணை நகலெடு", copied:"1930 நகலெடுக்கப்பட்டது",
+    linkPortal:"cybercrime.gov.in-ல் ஆன்லைனில் புகார் செய்யுங்கள் →", linkChakshu:"மோசடி அழைப்பு அல்லது செய்தியை Chakshu (சஞ்சார் சாத்தி)-ல் புகார் செய்யுங்கள் →",
+    footer:"Scam Shield எச்சரிக்கை மட்டுமே தருகிறது, சட்ட ஆலோசனை அல்ல. சந்தேகம் இருந்தால் அழைப்பைத் துண்டித்து, உங்கள் கார்டில் உள்ள எண்ணில் வங்கியை அழையுங்கள்.",
+    vScam:"மோசடியாக இருக்கலாம்", vWarn:"கவனமாக இருங்கள்", vSafe:"மோசடி அறிகுறிகள் இல்லை", vEmpty:"செய்திக்காகக் காத்திருக்கிறது",
+    hEmpty:"செய்தியை ஒட்டவும் அல்லது அழைப்பைக் கேட்கத் தொடங்கவும். ஒவ்வொரு அபாய அறிகுறியையும் Scam Shield விளக்கும்.",
+    safeTruth:"பொதுவான மோசடி முறைகள் எதுவும் இதில் இல்லை. இருந்தாலும் OTP, UPI PIN, கார்டு விவரங்களை யாருக்கும் சொல்லாதீர்கள்.",
+    risk:"அபாயம்", flagsH:"அபாய அறிகுறிகள்", doH:"இப்போது என்ன செய்வது", emptyNeed:"முதலில் ஒரு செய்தியை ஒட்டவும் அல்லது தட்டச்சு செய்யவும்.",
+    pasteFail:"கிளிப்போர்டைப் படிக்க முடியவில்லை. பெட்டியில் நீண்ட நேரம் அழுத்தி Paste தேர்வு செய்யவும்." }
+};
+
+/* =====================================================================
+   2. SCAM KNOWLEDGE: categories (what the scam is, the truth, what to do)
+   ===================================================================== */
+const CAT = {
+  arrest:{ en:["“Digital arrest” scam","Police, CBI, ED, customs and courts never arrest anyone over a video call, and never ask you to transfer money to “verify” it.",
+              ["Hang up. A real officer will never keep you on a video call.","Do not transfer any money, even if they say it is refundable.","Tell a family member right away. Scammers want you isolated.","Call 1930 or report at cybercrime.gov.in."],
+              "Warning. This sounds like a digital arrest scam. Police never arrest anyone on a video call. Hang up now."],
+           hi:["“डिजिटल अरेस्ट” ठगी","पुलिस, CBI, ED, कस्टम या कोर्ट कभी वीडियो कॉल पर गिरफ्तार नहीं करते, और जाँच के नाम पर पैसे ट्रांसफर करने को नहीं कहते।",
+              ["फ़ोन काट दें। असली अधिकारी आपको वीडियो कॉल पर नहीं रोकेगा।","कोई पैसा ट्रांसफर न करें, चाहे वे ‘वापस मिलेगा’ कहें।","तुरंत परिवार के किसी सदस्य को बताएँ। ठग आपको अकेला रखना चाहते हैं।","1930 पर कॉल करें या cybercrime.gov.in पर शिकायत करें।"],
+              "सावधान। यह डिजिटल अरेस्ट ठगी लगती है। पुलिस कभी वीडियो कॉल पर गिरफ्तार नहीं करती। फ़ोन काट दीजिए।"],
+           ta:["“டிஜிட்டல் அரெஸ்ட்” மோசடி","காவல்துறை, CBI, ED, சுங்கத்துறை அல்லது நீதிமன்றம் வீடியோ அழைப்பில் யாரையும் கைது செய்யாது, சரிபார்ப்புக்காக பணம் அனுப்பச் சொல்லாது.",
+              ["அழைப்பைத் துண்டியுங்கள். உண்மையான அதிகாரி உங்களை வீடியோ அழைப்பில் வைத்திருக்க மாட்டார்.","திருப்பித் தருவோம் என்று சொன்னாலும் பணம் அனுப்பாதீர்கள்.","உடனே குடும்பத்தினரிடம் சொல்லுங்கள். மோசடிக்காரர்கள் உங்களைத் தனிமைப்படுத்த விரும்புகிறார்கள்.","1930-ஐ அழையுங்கள் அல்லது cybercrime.gov.in-ல் புகார் செய்யுங்கள்."],
+              "எச்சரிக்கை. இது டிஜிட்டல் அரெஸ்ட் மோசடி போல் தெரிகிறது. காவல்துறை வீடியோ அழைப்பில் கைது செய்யாது. அழைப்பைத் துண்டியுங்கள்."] },
+  kyc:{ en:["Fake KYC / account-block scam","Banks never ask you to update KYC through an SMS link, a WhatsApp message or a phone call.",
+           ["Do not open the link or call the number in the message.","Open your bank's own app, or visit the branch, to check your KYC status.","Never share OTP, PIN, CVV or passwords."],
+           "Warning. This looks like a fake KYC scam. Banks never ask for KYC through a link. Do not open it."],
+        hi:["फ़र्ज़ी KYC / खाता बंद ठगी","बैंक कभी SMS लिंक, WhatsApp या फ़ोन कॉल से KYC अपडेट करने को नहीं कहते।",
+           ["मैसेज का लिंक न खोलें, न उसमें दिए नंबर पर कॉल करें।","KYC की स्थिति अपने बैंक के असली ऐप या ब्रांच में जाकर देखें।","OTP, PIN, CVV या पासवर्ड कभी न बताएँ।"],
+           "सावधान। यह फ़र्ज़ी KYC ठगी लगती है। बैंक कभी लिंक से KYC नहीं माँगता। लिंक न खोलें।"],
+        ta:["போலி KYC / கணக்கு முடக்கம் மோசடி","வங்கிகள் SMS இணைப்பு, WhatsApp அல்லது தொலைபேசி அழைப்பு மூலம் KYC புதுப்பிக்கச் சொல்லாது.",
+           ["செய்தியில் உள்ள இணைப்பைத் திறக்காதீர்கள், அதிலுள்ள எண்ணை அழைக்காதீர்கள்.","உங்கள் வங்கியின் சொந்த ஆப் அல்லது கிளையில் KYC நிலையைப் பாருங்கள்.","OTP, PIN, CVV, கடவுச்சொல்லை ஒருபோதும் சொல்லாதீர்கள்."],
+           "எச்சரிக்கை. இது போலி KYC மோசடி போல் தெரிகிறது. வங்கி இணைப்பு மூலம் KYC கேட்காது. அதைத் திறக்காதீர்கள்."] },
+  upi:{ en:["UPI refund / “receive money” scam","You never need to enter your UPI PIN or scan a QR code to RECEIVE money. A PIN only ever sends money out.",
+           ["Decline the collect request or payment request.","Do not scan any QR code they send.","If someone says they sent money “by mistake”, check your bank balance yourself. Do not send anything back."],
+           "Warning. This is a UPI refund scam. You never need your PIN to receive money. Do not enter it."],
+        hi:["UPI रिफ़ंड / ‘पैसे पाने’ वाली ठगी","पैसे पाने के लिए कभी UPI PIN डालने या QR कोड स्कैन करने की ज़रूरत नहीं होती। PIN डालने से पैसा सिर्फ़ जाता है।",
+           ["कलेक्ट रिक्वेस्ट या पेमेंट रिक्वेस्ट को रिजेक्ट करें।","उनका भेजा कोई QR कोड स्कैन न करें।","अगर कोई कहे ‘गलती से पैसे भेज दिए’, तो खुद बैंक बैलेंस देखें। कुछ भी वापस न भेजें।"],
+           "सावधान। यह UPI रिफ़ंड ठगी है। पैसे पाने के लिए PIN की ज़रूरत नहीं होती। PIN मत डालिए।"],
+        ta:["UPI ரீஃபண்ட் / ‘பணம் பெறுதல்’ மோசடி","பணம் பெற UPI PIN போடவோ QR குறியீட்டை ஸ்கேன் செய்யவோ தேவையில்லை. PIN போட்டால் பணம் வெளியே மட்டுமே போகும்.",
+           ["கலெக்ட் கோரிக்கையை நிராகரியுங்கள்.","அவர்கள் அனுப்பும் QR குறியீட்டை ஸ்கேன் செய்யாதீர்கள்.","‘தவறுதலாக பணம் அனுப்பினேன்’ என்றால், நீங்களே வங்கி இருப்பைப் பாருங்கள். எதையும் திருப்பி அனுப்பாதீர்கள்."],
+           "எச்சரிக்கை. இது UPI ரீஃபண்ட் மோசடி. பணம் பெற PIN தேவையில்லை. PIN போடாதீர்கள்."] },
+  otp:{ en:["OTP-theft scam","No bank, delivery company or government office will ever ask you to tell them an OTP.",
+           ["Do not read out or forward the OTP.","If you already shared it, call your bank and block the card or UPI immediately.","Call 1930 within the first hour; that is when money can still be frozen."],
+           "Warning. They are asking for your OTP. Never share an OTP with anyone."],
+        hi:["OTP चोरी ठगी","कोई बैंक, डिलीवरी कंपनी या सरकारी दफ़्तर कभी OTP नहीं माँगता।",
+           ["OTP न बताएँ, न फॉरवर्ड करें।","अगर बता चुके हैं, तो तुरंत बैंक को कॉल करके कार्ड या UPI ब्लॉक कराएँ।","पहले एक घंटे में 1930 पर कॉल करें, तभी पैसा रोका जा सकता है।"],
+           "सावधान। वे आपका OTP माँग रहे हैं। OTP किसी को मत बताइए।"],
+        ta:["OTP திருட்டு மோசடி","எந்த வங்கியும், டெலிவரி நிறுவனமும், அரசு அலுவலகமும் OTP கேட்காது.",
+           ["OTP-ஐச் சொல்லாதீர்கள், அனுப்பாதீர்கள்.","ஏற்கனவே சொல்லியிருந்தால், உடனே வங்கியை அழைத்து கார்டு அல்லது UPI-ஐ முடக்குங்கள்.","முதல் ஒரு மணி நேரத்துக்குள் 1930-ஐ அழையுங்கள்; அப்போதுதான் பணத்தை நிறுத்த முடியும்."],
+           "எச்சரிக்கை. அவர்கள் உங்கள் OTP கேட்கிறார்கள். OTP-ஐ யாரிடமும் சொல்லாதீர்கள்."] },
+  remote:{ en:["Remote-access / fake app scam","Installing AnyDesk, TeamViewer or an .apk file sent by a stranger lets them read your OTPs and control your phone.",
+           ["Do not install the app or open the .apk file.","If you installed it, uninstall it and turn on airplane mode.","Change your banking passwords from a different device."],
+           "Warning. They want you to install an app that can control your phone. Do not install it."],
+        hi:["रिमोट-एक्सेस / फ़र्ज़ी ऐप ठगी","अजनबी के कहने पर AnyDesk, TeamViewer या .apk फ़ाइल इंस्टॉल करने से वे आपके OTP पढ़ सकते हैं और फ़ोन चला सकते हैं।",
+           ["ऐप इंस्टॉल न करें, .apk फ़ाइल न खोलें।","अगर इंस्टॉल कर लिया है, तो उसे हटाएँ और फ़्लाइट मोड चालू करें।","किसी दूसरे डिवाइस से बैंकिंग पासवर्ड बदलें।"],
+           "सावधान। वे ऐसा ऐप डलवाना चाहते हैं जिससे आपका फ़ोन उनके क़ब्ज़े में होगा। इंस्टॉल मत कीजिए।"],
+        ta:["ரிமோட் அணுகல் / போலி ஆப் மோசடி","அந்நியர் சொன்னதற்காக AnyDesk, TeamViewer அல்லது .apk கோப்பை நிறுவினால், அவர்கள் உங்கள் OTP-களைப் படித்து போனைக் கட்டுப்படுத்தலாம்.",
+           ["ஆப்பை நிறுவாதீர்கள், .apk கோப்பைத் திறக்காதீர்கள்.","நிறுவியிருந்தால், அதை நீக்கி விமானப் பயன்முறையை இயக்குங்கள்.","வேறு சாதனத்திலிருந்து வங்கி கடவுச்சொற்களை மாற்றுங்கள்."],
+           "எச்சரிக்கை. உங்கள் போனைக் கட்டுப்படுத்தும் ஆப்பை நிறுவச் சொல்கிறார்கள். நிறுவாதீர்கள்."] },
+  bill:{ en:["Electricity-bill disconnection scam","Power companies send disconnection notices through official bills, not personal mobile numbers or WhatsApp.",
+           ["Do not call the number in the message.","Check your bill on your electricity board's official app or website."],
+           "Warning. This looks like a fake electricity bill message. Do not call that number."],
+        hi:["बिजली बिल कनेक्शन कटने की ठगी","बिजली कंपनियाँ कनेक्शन कटने का नोटिस निजी मोबाइल नंबर या WhatsApp से नहीं भेजतीं।",
+           ["मैसेज में दिए नंबर पर कॉल न करें।","अपना बिल बिजली बोर्ड के असली ऐप या वेबसाइट पर देखें।"],
+           "सावधान। यह बिजली बिल का फ़र्ज़ी मैसेज लगता है। उस नंबर पर कॉल मत कीजिए।"],
+        ta:["மின் கட்டண இணைப்புத் துண்டிப்பு மோசடி","மின் நிறுவனங்கள் தனிப்பட்ட மொபைல் எண் அல்லது WhatsApp மூலம் துண்டிப்பு அறிவிப்பு அனுப்பாது.",
+           ["செய்தியில் உள்ள எண்ணை அழைக்காதீர்கள்.","மின் வாரியத்தின் அதிகாரப்பூர்வ ஆப் அல்லது இணையதளத்தில் கட்டணத்தைப் பாருங்கள்."],
+           "எச்சரிக்கை. இது போலி மின் கட்டண செய்தி போல் தெரிகிறது. அந்த எண்ணை அழைக்காதீர்கள்."] },
+  job:{ en:["Task / part-time job scam","Real jobs never pay you to like videos or review hotels, and never ask you to deposit money to unlock earnings.",
+           ["Do not join the Telegram group or pay any “task” deposit.","The first small payouts are bait to make you deposit more."],
+           "Warning. This looks like a task job scam. Do not pay any deposit."],
+        hi:["टास्क / पार्ट-टाइम जॉब ठगी","असली नौकरी में वीडियो लाइक करने या होटल रिव्यू के पैसे नहीं मिलते, और कमाई निकालने के लिए पैसे जमा नहीं कराए जाते।",
+           ["Telegram ग्रुप में न जुड़ें, कोई ‘टास्क’ डिपॉज़िट न दें।","शुरू की छोटी कमाई चारा है, ताकि आप ज़्यादा पैसा जमा करें।"],
+           "सावधान। यह टास्क जॉब ठगी लगती है। कोई डिपॉज़िट मत दीजिए।"],
+        ta:["டாஸ்க் / பகுதிநேர வேலை மோசடி","உண்மையான வேலையில் வீடியோக்களை லைக் செய்ய பணம் தர மாட்டார்கள், சம்பாத்தியத்தை எடுக்க பணம் கட்டச் சொல்ல மாட்டார்கள்.",
+           ["Telegram குழுவில் சேராதீர்கள், ‘டாஸ்க்’ டெபாசிட் கட்டாதீர்கள்.","ஆரம்பத்தில் வரும் சிறிய வருமானம் தூண்டில்; அதிக பணம் கட்ட வைப்பதற்காக."],
+           "எச்சரிக்கை. இது டாஸ்க் வேலை மோசடி போல் தெரிகிறது. எந்த டெபாசிட்டும் கட்டாதீர்கள்."] },
+  prize:{ en:["Lottery / prize scam","If you have to pay a fee, tax or GST to receive a prize, there is no prize.",
+           ["Do not pay any processing fee or tax.","Do not share bank or Aadhaar details to “claim” it."],
+           "Warning. This is a fake prize message. Do not pay any fee."],
+        hi:["लॉटरी / इनाम ठगी","अगर इनाम पाने के लिए फ़ीस, टैक्स या GST देना पड़े, तो कोई इनाम है ही नहीं।",
+           ["कोई प्रोसेसिंग फ़ीस या टैक्स न दें।","इनाम ‘क्लेम’ करने के लिए बैंक या आधार की जानकारी न दें।"],
+           "सावधान। यह फ़र्ज़ी इनाम का मैसेज है। कोई फ़ीस मत दीजिए।"],
+        ta:["லாட்டரி / பரிசு மோசடி","பரிசு பெற கட்டணம், வரி அல்லது GST கட்ட வேண்டுமென்றால், பரிசே இல்லை.",
+           ["எந்த செயலாக்கக் கட்டணமோ வரியோ கட்டாதீர்கள்.","பரிசைப் ‘பெற’ வங்கி அல்லது ஆதார் விவரங்களைக் கொடுக்காதீர்கள்."],
+           "எச்சரிக்கை. இது போலி பரிசு செய்தி. எந்தக் கட்டணமும் கட்டாதீர்கள்."] },
+  invest:{ en:["Investment / trading scam","No genuine investment guarantees fixed daily or doubled returns.",
+           ["Do not transfer money to “trading” apps or groups recommended on WhatsApp or Telegram.","Check that any broker is SEBI-registered on sebi.gov.in."],
+           "Warning. Guaranteed returns are a scam sign. Do not invest."],
+        hi:["निवेश / ट्रेडिंग ठगी","कोई असली निवेश रोज़ाना तय मुनाफ़े या पैसा डबल होने की गारंटी नहीं देता।",
+           ["WhatsApp या Telegram पर बताए ‘ट्रेडिंग’ ऐप या ग्रुप में पैसे न भेजें।","sebi.gov.in पर देखें कि ब्रोकर SEBI में रजिस्टर्ड है या नहीं।"],
+           "सावधान। गारंटीड मुनाफ़ा ठगी का संकेत है। निवेश मत कीजिए।"],
+        ta:["முதலீடு / டிரேடிங் மோசடி","எந்த உண்மையான முதலீடும் தினசரி நிலையான லாபமோ இரட்டிப்போ உத்தரவாதம் தராது.",
+           ["WhatsApp அல்லது Telegram-ல் சொல்லப்படும் ‘டிரேடிங்’ ஆப் அல்லது குழுவுக்கு பணம் அனுப்பாதீர்கள்.","sebi.gov.in-ல் தரகர் SEBI-ல் பதிவு செய்தவரா என்று பாருங்கள்."],
+           "எச்சரிக்கை. உத்தரவாத லாபம் மோசடியின் அறிகுறி. முதலீடு செய்யாதீர்கள்."] },
+  sim:{ en:["SIM / number-block scam","TRAI and the Department of Telecom do not call people to disconnect their numbers.",
+           ["Hang up. Do not press any number on the keypad.","Your SIM provider's own app shows the real status of your number."],
+           "Warning. This sounds like a fake TRAI or SIM block call. Hang up."],
+        hi:["सिम / नंबर बंद होने की ठगी","TRAI या दूरसंचार विभाग नंबर बंद करने के लिए लोगों को कॉल नहीं करता।",
+           ["फ़ोन काटें। कोई भी बटन न दबाएँ।","नंबर की असली स्थिति आपकी सिम कंपनी के ऐप में दिखती है।"],
+           "सावधान। यह TRAI या सिम बंद होने की फ़र्ज़ी कॉल लगती है। फ़ोन काट दीजिए।"],
+        ta:["சிம் / எண் முடக்கம் மோசடி","TRAI அல்லது தொலைத்தொடர்புத் துறை எண்ணைத் துண்டிக்க யாரையும் அழைக்காது.",
+           ["அழைப்பைத் துண்டியுங்கள். எந்த எண்ணையும் அழுத்தாதீர்கள்.","உங்கள் எண்ணின் உண்மை நிலை சிம் நிறுவனத்தின் ஆப்பில் தெரியும்."],
+           "எச்சரிக்கை. இது போலி TRAI அல்லது சிம் முடக்க அழைப்பு போல் தெரிகிறது. துண்டியுங்கள்."] },
+  generic:{ en:["Suspicious message","This message uses pressure tactics that scammers rely on.",
+           ["Do not act in a hurry. Scammers create panic so you skip checking.","Verify by calling the organisation on its official number, not the one in the message.","Never share OTP, PIN, CVV or passwords."],
+           "Be careful. This message has scam warning signs."],
+        hi:["संदिग्ध मैसेज","इस मैसेज में दबाव बनाने वाली वही चालें हैं जो ठग इस्तेमाल करते हैं।",
+           ["जल्दबाज़ी न करें। ठग घबराहट पैदा करते हैं ताकि आप जाँच न करें।","मैसेज वाले नंबर पर नहीं, संस्था के आधिकारिक नंबर पर कॉल करके पुष्टि करें।","OTP, PIN, CVV या पासवर्ड कभी न बताएँ।"],
+           "सावधान। इस मैसेज में ठगी के संकेत हैं।"],
+        ta:["சந்தேகமான செய்தி","மோசடிக்காரர்கள் பயன்படுத்தும் அழுத்த உத்திகள் இந்தச் செய்தியில் உள்ளன.",
+           ["அவசரப்படாதீர்கள். சரிபார்க்காமல் இருக்கவே பதற்றம் உண்டாக்குகிறார்கள்.","செய்தியில் உள்ள எண்ணை அல்ல, நிறுவனத்தின் அதிகாரப்பூர்வ எண்ணை அழைத்து உறுதிசெய்யுங்கள்.","OTP, PIN, CVV, கடவுச்சொல்லை ஒருபோதும் சொல்லாதீர்கள்."],
+           "கவனம். இந்தச் செய்தியில் மோசடி அறிகுறிகள் உள்ளன."] }
+};
+
+/* =====================================================================
+   3. SIGNALS: patterns in English, Hinglish, Hindi (Devanagari), Tamil and Tanglish.
+      w = weight. cat = scam type it points to (null = supporting signal).
+   ===================================================================== */
+const S = (id, cat, w, re, en, hi, ta) => ({ id, cat, w, re:new RegExp(re, "giu"), label:{ en, hi, ta } });
+const SIGNALS = [
+  S("authority", null, 14,
+    String.raw`\b(cbi|enforcement directorate|ed officer|narcotics|ncb|customs|cyber ?(crime|cell|police)|crime branch|(mumbai|delhi|state) police|police (station|officer|inspector)|inspector|trai|department of telecom|income tax (officer|department)|rbi officer|supreme court|high court|magistrate|judge)\b|सीबीआई|पुलिस|क्राइम ब्रांच|कस्टम|नारकोटिक्स|साइबर (सेल|क्राइम)|ट्राई|आयकर|सुप्रीम कोर्ट|मजिस्ट्रेट|போலீஸ்|காவல்(துறை| நிலைய)|சிபிஐ|சுங்க|சைபர் க்ரைம்|நீதிமன்ற|நீதிபதி`,
+    "Claims to be police, CBI, customs or a court","पुलिस, CBI, कस्टम या कोर्ट होने का दावा","காவல்துறை, CBI, சுங்கம் அல்லது நீதிமன்றம் என்று கூறுகிறது"),
+  S("arrestThreat", "arrest", 20,
+    String.raw`\b(arrest(ed)?|warrant|f\.?i\.?r|case (has been |is )?(registered|filed|booked)|money laundering|hawala|illegal (parcel|items|transaction)|drugs?|md ?ma|contraband|giraftar|giraftari|kaidhu)\b|गिरफ़्?तार|वारंट|अरेस्ट|मनी लॉन्ड्रिंग|ड्रग्स|एफ़?आईआर|केस दर्ज|हवाला|கைது|வாரண்ட்|வழக்கு பதிவு|போதைப்பொருள்|பணமோசடி`,
+    "Threatens arrest, a case or a criminal charge","गिरफ़्तारी, केस या अपराध का डर दिखाना","கைது, வழக்கு அல்லது குற்றச்சாட்டு என்று மிரட்டுகிறது"),
+  S("parcel", "arrest", 12,
+    String.raw`\b(parcel|courier|fedex|dhl|blue ?dart)\b.{0,60}\b(drugs?|passports?|illegal|seized|customs|cards?)\b|पार्सल.{0,40}(ड्रग्स|ज़ब्त|गैरकानूनी)|பார்சல.{0,40}(போதை|பறிமுதல்)`,
+    "Says a parcel in your name had illegal items","आपके नाम के पार्सल में गैरकानूनी सामान बताना","உங்கள் பெயரில் பார்சலில் சட்டவிரோதப் பொருள் என்கிறது"),
+  S("videoHold", "arrest", 32,
+    String.raw`\b(digital(ly)? arrest(ed)?|stay on (the )?(video )?(call|camera)|keep (your )?camera on|do ?n[o']?t (disconnect|cut|end) (the )?(call|video)|video (call|kyc) (statement|interrogation|verification)|skype (call|statement)|call (mat|na) kat(o|na|iye)|phone cut (mat|panna koodathu))\b|डिजिटल अरेस्ट|वीडियो कॉल पर (रहें|रहिए|बने)|कॉल (मत|ना) काट|कैमरा (चालू|ऑन) रख|டிஜிட்டல் அரெஸ்ட்|வீடியோ கால்(லில்)? (இருங்கள்|இருக்க)|அழைப்பைத் துண்டிக்காதீர்கள்`,
+    "Demands you stay on a video call (“digital arrest”)","वीडियो कॉल पर बने रहने की माँग (“डिजिटल अरेस्ट”)","வீடியோ அழைப்பில் இருக்கச் சொல்கிறது (“டிஜிட்டல் அரெஸ்ட்”)"),
+  S("idMisuse", "arrest", 14,
+    String.raw`\b(aadhaa?r|pan|sim|mobile number|bank account)\b.{0,50}\b(misused|used (for|in)|linked (to|with) (a )?(crime|case|illegal)|involved in)\b|आधार.{0,40}(दुरुपयोग|ग़लत इस्तेमाल|इस्तेमाल हुआ)|ஆதார்.{0,40}(தவறாகப் பயன்|பயன்படுத்தப்பட்ட)`,
+    "Says your Aadhaar, SIM or account was used in a crime","आपके आधार, सिम या खाते के अपराध में इस्तेमाल का दावा","உங்கள் ஆதார், சிம் அல்லது கணக்கு குற்றத்தில் பயன்பட்டதாகக் கூறுகிறது"),
+  S("moneyTransfer", null, 28,
+    String.raw`\b(safe|secure|secret|rbi|government|escrow) (bank )?account\b|\b(for|under) verification\b|\bverification (amount|fund|purpose|process)\b|\btransfer (all |your |the )?(money|funds|savings|balance|fd)\b|\b(security|refundable) deposit\b|\b(pay|clear) (the )?(fine|penalty|bail)\b|\bsettle (the|this) case\b|\bpaise (transfer|bhej|bhejo|bhejiye)\b|पैसे (ट्रांसफर|भेज)|सुरक्षित खाते|जुर्माना|ज़मानत|वेरिफ़िकेशन के लिए|பணத்தை (அனுப்ப|மாற்ற)|பாதுகாப்பான கணக்கு|அபராதம்|ஜாமீன்|panatha anupp`,
+    "Asks you to transfer money to “verify” or settle","‘वेरिफ़िकेशन’ या मामला निपटाने के लिए पैसे भेजने को कहना","‘சரிபார்ப்பு’ அல்லது வழக்கை முடிக்க பணம் அனுப்பச் சொல்கிறது"),
+  S("secrecy", null, 22,
+    String.raw`\b(do ?n[o']?t|never) (tell|inform|share (this )?with) (anyone|anybody|your (family|parents|wife|husband|bank))\b|\bkeep (this|it) (secret|confidential)\b|\b(confidential|secret) (case|matter|investigation)\b|\bkisi ko (mat|na) bata\w*\b|किसी को (मत|ना|न) बता|गोपनीय|गुप्त रख|யாரிடமும் சொல்ல(ாதீர்கள்|க் கூடாது)|ரகசியமாக வை|ragasiyam`,
+    "Tells you to keep it secret from family","परिवार से छिपाकर रखने को कहना","குடும்பத்திடம் சொல்லாமல் ரகசியமாக வைக்கச் சொல்கிறது"),
+  S("urgency", null, 10,
+    String.raw`\b(immediately|urgent(ly)?|right now|within (\d+|one|two|24) ?(hours?|hrs?|minutes?|mins?)|today itself|last (warning|chance|reminder|date)|will be (blocked|suspended|deactivated|disconnected|cancelled|closed|frozen)|turant|abhi ke abhi|udane)\b|तुरंत|फ़ौरन|आज ही|आख़िरी (चेतावनी|मौका)|बंद (कर दिया जाएगा|हो जाएगा)|ब्लॉक (कर दिया जाएगा|हो जाएगा)|உடனடியாக|இன்றே|முடக்கப்படும்|துண்டிக்கப்படும்|கடைசி எச்சரிக்கை`,
+    "Creates panic with a deadline or threat","डेडलाइन या धमकी से घबराहट पैदा करना","காலக்கெடு அல்லது மிரட்டல் மூலம் பதற்றம் உண்டாக்குகிறது"),
+  S("kyc", "kyc", 22,
+    String.raw`\b(e-?kyc|re-?kyc|kyc)\b|\bpan ?(card)? (update|link|verification|expired?)\b|\bupdate (your )?(kyc|pan|account details|bank details)\b|\baccount (will be |has been |is )?(blocked|suspended|frozen|closed|deactivated|on hold|restricted)\b|केवाईसी|खाता (बंद|ब्लॉक|सस्पेंड)|पैन (अपडेट|लिंक)|கேஒய்சி|கணக்கு (முடக்க|பிளாக்|நிறுத்த)|அக்கவுண்ட் (முடக்க|பிளாக்)`,
+    "Says your account is blocked unless you update KYC","KYC अपडेट न करने पर खाता बंद होने की बात","KYC புதுப்பிக்காவிட்டால் கணக்கு முடக்கம் என்கிறது"),
+  S("bankName", null, 4,
+    String.raw`\b(sbi|state bank|hdfc|icici|axis|kotak|pnb|bank of baroda|canara|union bank|indian bank|yes bank|paytm|phonepe|google ?pay|gpay|bhim)\b`,
+    "Uses a bank or payment app's name","बैंक या पेमेंट ऐप का नाम इस्तेमाल","வங்கி அல்லது பேமெண்ட் ஆப் பெயரைப் பயன்படுத்துகிறது"),
+  S("upiPin", "upi", 36,
+    String.raw`\b(enter|put|type|use) (your )?(upi )?pin\b.{0,40}\b(receive|get|accept|credit|refund|cashback)\b|\b(receive|get|accept|claim) (the )?(money|amount|payment|refund|cashback)\b.{0,40}\b(pin|scan)\b|\bpin (daal|dal|daalo|dalo|daaliye|daliye|enter kar\w*|podu|podunga)\b|\bscan (the |this |my )?(qr|code)\b.{0,40}\b(receive|get|refund|cashback|prize)\b|पिन डाल|पिन दर्ज|QR (कोड )?स्कैन.{0,30}(पैसे|रिफ़ंड|कैशबैक)|PIN (போடு|போடுங்க|உள்ளிடு)|பின் (நம்பர் |எண் )?(போடுங்கள்|உள்ளிடுங்கள்)|ஸ்கேன் செய்(து|யுங்கள்).{0,30}(பணம்|ரீஃபண்ட்|கேஷ்பேக்)`,
+    "Says to enter your UPI PIN or scan a QR to receive money","पैसे पाने के लिए UPI PIN डालने या QR स्कैन करने को कहना","பணம் பெற UPI PIN போடச் அல்லது QR ஸ்கேன் செய்யச் சொல்கிறது"),
+  S("mistakeRefund", "upi", 26,
+    String.raw`\b(sent|transferred|credited|paid) (you |to you |in your account )?(by mistake|wrongly|accidentally|galti se)\b|\bgalti se\b|\b(please )?(return|refund|send back) (the|my) (money|amount)\b|\bcollect request\b|\brequest money\b|ग़?गलती से|पैसे वापस (कर|भेज)|தவறுதலாக|தவறாக (அனுப்ப|வந்த)|திருப்பி அனுப்பு`,
+    "Claims money was sent to you “by mistake”","‘गलती से’ पैसे भेजने का दावा","‘தவறுதலாக’ பணம் அனுப்பியதாகக் கூறுகிறது"),
+  S("otp", "otp", 40,
+    String.raw`\b(otp|one[- ]time password|verification code|6[- ]digit code)\b.{0,40}\b(share|send|tell|read|forward|bata\w*|bhej\w*|sollunga|anuppunga)\b|\b(share|send|tell|read|forward|bata\w*|bhej\w*)\b.{0,30}\b(otp|code)\b|ओटीपी.{0,30}(बता|भेज|शेयर)|(बता|भेज|शेयर).{0,20}ओटीपी|OTP.{0,30}(बता|भेज|சொல்|அனுப்ப)|ஓடிபி.{0,30}(சொல்|அனுப்ப)`,
+    "Asks you to share an OTP","OTP बताने या भेजने को कहना","OTP-ஐச் சொல்லச் அல்லது அனுப்பச் சொல்கிறது"),
+  S("remote", "remote", 38,
+    String.raw`\b(any ?desk|team ?viewer|quick ?support|rust ?desk|airdroid|screen ?shar(e|ing))\b|\.apk\b|\bapk (file|link)\b|\b(install|download) (this|the|our|my) (app|application)\b|ऐप (डाउनलोड|इंस्टॉल) कर|ஆப்பை? (டவுன்லோட்|பதிவிறக்க|நிறுவ)`,
+    "Wants you to install a remote-control app or .apk","रिमोट-कंट्रोल ऐप या .apk इंस्टॉल करवाना","ரிமோட் கட்டுப்பாட்டு ஆப் அல்லது .apk நிறுவச் சொல்கிறது"),
+  S("shortLink", null, 16,
+    String.raw`\b(bit\.ly|tinyurl\.com|t\.ly|cutt\.ly|rb\.gy|is\.gd|shorturl\.at|tiny\.cc|goo\.gl|ow\.ly)\/\S*`,
+    "Contains a shortened link that hides where it goes","छोटा लिंक जो असली पता छिपाता है","உண்மையான முகவரியை மறைக்கும் சுருக்கிய இணைப்பு"),
+  S("oddDomain", null, 14,
+    String.raw`\b[\w-]+\.(xyz|top|click|link|info|online|site|live|buzz|icu|shop|cfd|sbs|vip|monster|rest|lol)\b(\/\S*)?`,
+    "Link uses a cheap domain that real banks don't use","लिंक ऐसे सस्ते डोमेन का है जो असली बैंक नहीं इस्तेमाल करते","உண்மையான வங்கிகள் பயன்படுத்தாத மலிவான டொமைன் இணைப்பு"),
+  S("anyLink", null, 5, String.raw`\bhttps?:\/\/\S+`, "Contains a link","इसमें एक लिंक है","இதில் ஒரு இணைப்பு உள்ளது"),
+  S("bill", "bill", 32,
+    String.raw`\b(electricity|power|light|current|eb|bijli) (bill|connection|supply)\b.{0,80}\b(disconnect\w*|cut|tonight|9[:.]?30|not updated|pending)\b|बिजली.{0,40}(कनेक्शन )?(कट|काट|बंद)|மின் (கட்டணம்|இணைப்பு).{0,40}(துண்டி|இன்றிரவு)`,
+    "Threatens to cut your electricity tonight","आज रात बिजली काटने की धमकी","இன்றிரவு மின் இணைப்பைத் துண்டிப்போம் என்று மிரட்டுகிறது"),
+  S("job", "job", 24,
+    String.raw`\b(work from home|part[- ]?time (job|work)|daily (income|earning|payout)|earn (rs\.?|₹|inr)?\s?\d[\d,]*|like (youtube )?videos|rate (hotels|products|movies)|prepaid task|telegram (group|task|channel)|task (based|commission))\b|घर बैठे (कमाएँ|कमाई)|रोज़ (कमाएँ|कमाई)|पार्ट टाइम|வீட்டிலிருந்தே (சம்பாதி|வேலை)|தினமும் (சம்பாதி|வருமானம்)|பகுதிநேர வேலை`,
+    "Offers easy money for simple online tasks","आसान ऑनलाइन काम के बदले कमाई का लालच","எளிய ஆன்லைன் வேலைக்கு எளிதான பணம் என்கிறது"),
+  S("prize", "prize", 24,
+    String.raw`\b(lottery|lucky draw|you (have )?won|winner of|kbc|kaun banega crorepati|prize money|cash prize|gift (card|voucher|hamper))\b|लॉटरी|इनाम (जीत|मिला)|आपने .{0,20}जीत|லாட்டரி|பரிசு (வென்ற|கிடைத்த)|வென்றுள்ளீர்கள்`,
+    "Says you won a prize or lottery","इनाम या लॉटरी जीतने का दावा","பரிசு அல்லது லாட்டரி வென்றதாகக் கூறுகிறது"),
+  S("fee", "prize", 18,
+    String.raw`\b(processing|registration|claim|delivery|clearance) (fee|charge)s?\b|\b(gst|tax) (charge|amount|payment) (first|before)\b|प्रोसेसिंग फ़ीस|रजिस्ट्रेशन फ़ीस|கட்டணம் (முதலில்|செலுத்த)`,
+    "Asks for a fee before you get anything","कुछ मिलने से पहले फ़ीस माँगना","எதையும் தருவதற்கு முன் கட்டணம் கேட்கிறது"),
+  S("invest", "invest", 24,
+    String.raw`\b(guaranteed (returns?|profit|income)|double your (money|investment)|\d+ ?% (daily|weekly|monthly) (returns?|profit)|stock (tips|market) (group|expert|mentor)|ipo allotment|crypto (trading|investment|mining))\b|पैसा डबल|गारंटीड (मुनाफ़ा|रिटर्न)|இரட்டிப்பு (லாபம்|பணம்)|உத்தரவாத லாபம்`,
+    "Promises guaranteed or doubled returns","गारंटीड या दोगुने मुनाफ़े का वादा","உத்தரவாத அல்லது இரட்டிப்பு லாபம் என்கிறது"),
+  S("simBlock", "sim", 26,
+    String.raw`\b(sim|mobile number|your number|phone number)\b.{0,30}\b(will be )?(blocked|deactivated|disconnected|suspended|barred)\b|\bpress (9|1|0)\b|सिम (बंद|ब्लॉक)|नंबर (बंद|ब्लॉक) (हो|कर)|சிம் (முடக்க|துண்டி)|எண் (முடக்க|துண்டி)`,
+    "Says your SIM or number will be blocked","सिम या नंबर बंद होने की धमकी","சிம் அல்லது எண் முடக்கப்படும் என்கிறது"),
+  S("jobDeposit", "job", 22,
+    String.raw`\b(prepaid|task|security|joining) (deposit|amount|fee)|\b(deposit|recharge|invest)\b.{0,40}\b(unlock|withdraw|commission|higher (income|earning|level))\b|\bvip (level|task)\b|डिपॉज़िट|जमा कर(ें|ो).{0,30}(कमीशन|निकाल)|டெபாசிட்|கமிஷன்`,
+    "Asks for a deposit before you can withdraw earnings","कमाई निकालने से पहले पैसे जमा करवाना","சம்பாத்தியத்தை எடுக்கும் முன் டெபாசிட் கேட்கிறது"),
+  S("callNumber", null, 8,
+    String.raw`\b(call|contact|whatsapp) (our |the |this )?(officer|executive|helpline|number|customer care|us|on)\b.{0,25}(\+?91[\s-]?)?[6-9][\dx]{4,}|(कॉल|संपर्क) कर(ें|ो).{0,25}[6-9]\d{4,}|அழைக்கவும்.{0,25}[6-9]\d{4,}`,
+    "Pushes you to call a private mobile number","किसी निजी मोबाइल नंबर पर कॉल करवाना","தனிப்பட்ட மொபைல் எண்ணை அழைக்கச் சொல்கிறது"),
+  S("sensitive", null, 16,
+    String.raw`\b(cvv|card number|expiry date|net ?banking (password|id)|atm pin|mpin|aadhaa?r (number|otp))\b|सीवीवी|कार्ड नंबर|एटीएम पिन|கார்டு எண்|சிவிவி`,
+    "Asks for card, PIN or login details","कार्ड, PIN या लॉगिन की जानकारी माँगना","கார்டு, PIN அல்லது உள்நுழைவு விவரங்களைக் கேட்கிறது")
+];
+
+/* =====================================================================
+   4. ENGINE
+   ===================================================================== */
+function analyze(text){
+  const hits = [], spans = [];
+  for (const s of SIGNALS) {
+    s.re.lastIndex = 0;
+    const ms = [...text.matchAll(s.re)];
+    if (!ms.length) continue;
+    hits.push({ s, quote: ms[0][0].trim(), count: new Set(ms.map(m => m[0].toLowerCase().trim())).size });
+    for (const m of ms) if (m[0].trim()) {
+      let end = m.index + m[0].length;
+      while (end < text.length && /[\p{M}‌‍]/u.test(text[end])) end++; // never split a Hindi/Tamil letter from its vowel sign
+      spans.push([m.index, end]);
+    }
+  }
+  const has = id => hits.some(h => h.s.id === id);
+  let score = hits.reduce((a, h) => a + h.s.w + Math.min(8, 4 * (h.count - 1)), 0);
+  // combinations scammers use together
+  if (has("authority") && (has("arrestThreat") || has("idMisuse") || has("parcel"))) score += 16;
+  if (has("secrecy") && (has("moneyTransfer") || has("authority"))) score += 14;
+  if ((has("kyc") || has("bill") || has("simBlock")) && (has("anyLink") || has("shortLink") || has("oddDomain"))) score += 14;
+  if (has("urgency") && hits.length > 1) score += 6;
+  if (has("bill") && (has("callNumber") || has("urgency"))) score += 12;
+  if (has("job") && has("jobDeposit")) score += 12;
+  if (has("remote") && (has("otp") || has("mistakeRefund") || has("bankName") || has("kyc") || /refund|cashback|रिफ़ंड|ரீஃபண்ட்/i.test(text))) score += 12;
+  // near-certain scam asks: nobody legitimate needs these
+  if (has("otp") || has("upiPin") || has("videoHold")) score = Math.max(score, 64);
+  if (has("bankName") && hits.length === 1) score -= 4;
+  if (has("anyLink") && hits.length === 1) score -= 5;
+  score = Math.max(0, Math.min(100, score));
+
+  const byCat = {};
+  for (const h of hits) if (h.s.cat) byCat[h.s.cat] = (byCat[h.s.cat] || 0) + h.s.w;
+  if (has("moneyTransfer") && (has("authority") || has("arrestThreat"))) byCat.arrest = (byCat.arrest || 0) + 20;
+  if (has("remote")) byCat.remote += 10; // the app install is the attack; OTP theft follows from it
+  const cat = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a])[0] || (score >= 30 ? "generic" : null);
+  const level = !text.trim() ? "empty" : score >= 60 ? "scam" : score >= 30 ? "warn" : "safe";
+  return { score, level, cat, hits: hits.sort((a, b) => b.s.w - a.s.w), spans };
+}
+
+/* =====================================================================
+   5. EXAMPLES (written for this demo, modelled on real scam patterns)
+   ===================================================================== */
+const SAMPLES = [
+  { k:"Digital arrest (Hindi)", t:"मैं मुंबई क्राइम ब्रांच से इंस्पेक्टर राठौड़ बोल रहा हूँ। आपके आधार कार्ड का ग़लत इस्तेमाल मनी लॉन्ड्रिंग में हुआ है और आपके नाम पर गिरफ़्तारी वारंट जारी है। अभी आप डिजिटल अरेस्ट में हैं, वीडियो कॉल पर बने रहिए और किसी को मत बताइए। वेरिफ़िकेशन के लिए अपने सारे पैसे RBI के सुरक्षित खाते में ट्रांसफर कीजिए, जाँच के बाद वापस मिल जाएँगे।" },
+  { k:"Fake KYC (English)", t:"Dear SBI customer, your account will be blocked today as your KYC is expired. Update your PAN immediately to avoid suspension: http://sbi-kyc-update.xyz/verify" },
+  { k:"UPI refund (Hinglish)", t:"Sir maine galti se aapko 5000 rupaye bhej diye, please return the money. Maine aapko collect request bheji hai, bas apna UPI PIN daalo aur refund ho jayega. Bahut urgent hai please." },
+  { k:"KYC (Tamil)", t:"அன்புள்ள வாடிக்கையாளரே, உங்கள் கேஒய்சி காலாவதியானதால் உங்கள் வங்கி கணக்கு இன்றே முடக்கப்படும். உடனடியாக இந்த இணைப்பில் புதுப்பிக்கவும்: bit.ly/kyc-update-now" },
+  { k:"Parcel + police (Tamil)", t:"நான் சைபர் க்ரைம் காவல்துறையிலிருந்து பேசுகிறேன். உங்கள் பெயரில் வந்த FedEx பார்சலில் போதைப்பொருள் உள்ளது, உங்கள் மீது வழக்கு பதிவு செய்யப்பட்டுள்ளது. இது ரகசியமான விசாரணை, யாரிடமும் சொல்லாதீர்கள். அபராதம் செலுத்தாவிட்டால் கைது செய்வோம்." },
+  { k:"Task job", t:"Part time job! Earn ₹3000 daily from home. Just like YouTube videos and rate hotels. Join our Telegram group, small prepaid task deposit required to unlock higher commission." },
+  { k:"Normal message", t:"Hi beta, I reached Chennai safely. Will call you after dinner. Don't forget to take the curd from the fridge." }
+];
+
+/* =====================================================================
+   6. UI
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k, v); } catch(e){} } };
+let lang = store.get("ss-lang") || "en";
+let last = null, lastSpoken = { level:"", cat:"" };
+const T = k => (UI[lang] && UI[lang][k]) || UI.en[k];
+
+function esc(s){ return s.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+function highlighted(text, spans){
+  if (!spans.length) return esc(text);
+  spans.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const s of spans) { const l = merged[merged.length - 1]; if (l && s[0] <= l[1]) l[1] = Math.max(l[1], s[1]); else merged.push(s.slice()); }
+  let out = "", i = 0;
+  for (const [a, b] of merged) { out += esc(text.slice(i, a)) + "<mark>" + esc(text.slice(a, b)) + "</mark>"; i = b; }
+  return out + esc(text.slice(i));
+}
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role","status"); t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 2400); }
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = T(el.dataset.t); });
+  $("#msg").placeholder = T("placeholder");
+  document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  $("#micTxt").textContent = listening ? T("stopListen") : T("startListen");
+  renderResult(last);
+}
+
+function renderResult(r){
+  const box = $("#result");
+  if (!r || r.level === "empty") {
+    box.innerHTML = `<div class="verdict" data-v="empty"><span class="stamp" style="color:var(--muted)">${esc(T("vEmpty"))}</span><p class="note" style="font-size:16px">${esc(T("hEmpty"))}</p></div>`;
+    return;
+  }
+  const c = r.cat ? CAT[r.cat][lang] : null;
+  const head = r.level === "scam" ? T("vScam") : r.level === "warn" ? T("vWarn") : T("vSafe");
+  let html = `<div class="verdict" data-v="${r.level}">
+    <span class="stamp">${esc(head)}</span>
+    ${c && r.level !== "safe" ? `<h2>${esc(c[0])}</h2><p class="truth">${esc(c[1])}</p>` : `<p class="truth">${esc(T("safeTruth"))}</p>`}
+    <div class="meter"><div class="track" role="img" aria-label="${esc(T("risk"))} ${r.score}/100"><i style="width:${Math.max(3, r.score)}%"></i></div><b>${esc(T("risk"))} ${r.score}/100</b></div>`;
+  const flags = r.hits.filter(h => h.s.w >= 5);
+  if (flags.length) {
+    html += `<div class="label">${esc(T("flagsH"))}</div><ul class="flags">` +
+      flags.map(h => `<li><b>${esc(h.s.label[lang])}</b><q>${esc(h.quote.length > 90 ? h.quote.slice(0, 90) + "…" : h.quote)}</q></li>`).join("") + `</ul>`;
+  }
+  if (c && r.level !== "safe") html += `<div class="label">${esc(T("doH"))}</div><ol class="todo">${c[2].map(x => `<li>${esc(x)}</li>`).join("")}</ol>`;
+  if (r.source) html += `<div class="echo">${highlighted(r.source, r.spans)}</div>`;
+  html += `</div>`;
+  box.innerHTML = html;
+}
+
+function check(text, opts){
+  const r = analyze(text);
+  r.source = text; last = r;
+  renderResult(r);
+  if (opts && opts.alert) maybeAlert(r);
+  return r;
+}
+
+/* spoken + vibration alert, once per escalation */
+function maybeAlert(r){
+  const rank = { safe:0, warn:1, scam:2 };
+  if (r.level === "empty" || r.level === "safe") return;
+  if (rank[r.level] < rank[lastSpoken.level || "safe"] || (r.level === lastSpoken.level && r.cat === lastSpoken.cat)) return;
+  lastSpoken = { level:r.level, cat:r.cat };
+  const c = CAT[r.cat || "generic"][lang];
+  if (navigator.vibrate) navigator.vibrate(r.level === "scam" ? [400, 150, 400, 150, 400] : [250]);
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(c[3]);
+    u.lang = { en:"en-IN", hi:"hi-IN", ta:"ta-IN" }[lang]; u.rate = 1;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.replace("_", "-").startsWith(u.lang.slice(0, 2)));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
+}
+
+/* --- message tab --- */
+const msg = $("#msg");
+let typeTimer = 0;
+msg.addEventListener("input", () => { clearTimeout(typeTimer); typeTimer = setTimeout(() => check(msg.value), 350); });
+$("#checkBtn").addEventListener("click", () => {
+  if (!msg.value.trim()) { toast(T("emptyNeed")); msg.focus(); return; }
+  lastSpoken = { level:"", cat:"" };
+  check(msg.value, { alert:true });
+  $("#result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start" });
+});
+$("#clearBtn").addEventListener("click", () => { msg.value = ""; last = null; renderResult(null); msg.focus(); });
+$("#pasteBtn").addEventListener("click", async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) { msg.value = t; check(t, { alert:true }); } else toast(T("pasteFail")); }
+  catch(e){ toast(T("pasteFail")); msg.focus(); }
+});
+const sbox = $("#samples");
+SAMPLES.forEach(s => { const b = document.createElement("button"); b.type = "button"; b.textContent = s.k;
+  b.addEventListener("click", () => { msg.value = s.t; lastSpoken = { level:"", cat:"" }; check(s.t, { alert:false }); }); sbox.append(b); });
+
+/* --- tabs --- */
+function showTab(which){
+  const call = which === "call";
+  $("#tabMsg").setAttribute("aria-selected", String(!call)); $("#tabCall").setAttribute("aria-selected", String(call));
+  $("#paneMsg").hidden = call; $("#paneCall").hidden = !call;
+  store.set("ss-tab", which);
+}
+$("#tabMsg").addEventListener("click", () => showTab("msg"));
+$("#tabCall").addEventListener("click", () => showTab("call"));
+
+/* --- language --- */
+document.querySelectorAll("[data-lang]").forEach(b => b.addEventListener("click", () => {
+  lang = b.dataset.lang; store.set("ss-lang", lang);
+  const rl = { en:"en-IN", hi:"hi-IN", ta:"ta-IN" }[lang]; $("#recLang").value = rl;
+  applyLang();
+}));
+
+/* --- copy helpline --- */
+$("#copy1930").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText("1930"); toast(T("copied")); } catch(e){ toast("1930"); }
+});
+
+/* --- live call listening (Web Speech API) --- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, finalText = "", wantListen = false;
+function setListening(on){
+  listening = on;
+  $("#micBtn").setAttribute("aria-pressed", String(on));
+  $("#micTxt").textContent = on ? T("stopListen") : T("startListen");
+}
+function startListening(){
+  if (!SR) { toast(T("noSpeech")); return; }
+  finalText = ""; lastSpoken = { level:"", cat:"" }; $("#live").textContent = "";
+  rec = new SR();
+  rec.lang = $("#recLang").value; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+  rec.onresult = e => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalText += t + " "; else interim += t;
+    }
+    const all = (finalText + interim).slice(-4000);
+    const r = check(all, { alert:true });
+    $("#live").innerHTML = highlighted(all, r.spans);
+    $("#live").scrollTop = $("#live").scrollHeight;
+  };
+  rec.onerror = e => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") { wantListen = false; toast(T("micDenied")); }
+  };
+  rec.onend = () => { if (wantListen) { try { rec.start(); } catch(e){ setListening(false); } } else setListening(false); };
+  wantListen = true;
+  try { rec.start(); setListening(true); } catch(e){ wantListen = false; toast(T("noSpeech")); }
+}
+function stopListening(){ wantListen = false; try { rec && rec.stop(); } catch(e){} setListening(false); }
+$("#micBtn").addEventListener("click", () => listening ? stopListening() : startListening());
+if (!SR) { $("#micBtn").disabled = true; }
+
+/* --- boot --- */
+$("#recLang").value = { en:"en-IN", hi:"hi-IN", ta:"ta-IN" }[lang];
+applyLang();
+showTab(store.get("ss-tab") === "call" ? "call" : "msg");
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
+// expose engine for tests
+window.ScamShield = { analyze };
+})();
+</script>
+</body>
+</html>
